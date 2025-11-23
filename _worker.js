@@ -898,8 +898,8 @@ async function handleUploadRequest(request, DATABASE, enableAuth, USERNAME, PASS
     else if (responseData.result.sticker) fileId = responseData.result.sticker.file_id;
     else throw new Error('返回的数据中没有文件 ID');
     const fileExtension = file.name.split('.').pop();
-    const timestamp = Date.now();
-    const imageURL = `https://${domain}/${timestamp}.${fileExtension}`;
+    const fileName = file.name;
+    const imageURL = `https://${domain}/${fileName}`;
     await DATABASE.prepare('INSERT INTO media (url, fileId) VALUES (?, ?) ON CONFLICT(url) DO NOTHING').bind(imageURL, fileId).run();
     return new Response(JSON.stringify({ data: imageURL }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
