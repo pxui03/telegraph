@@ -11,16 +11,16 @@ export default {
     const TG_CHAT_ID = env.TG_CHAT_ID;
     const maxSizeMB = env.MAX_SIZE_MB ? parseInt(env.MAX_SIZE_MB, 10) : 20;
     const maxSize = maxSizeMB * 1024 * 1024;
+    const backgroundImageUrl = env.BACKGROUND_IMAGE_URL;
 
     switch (pathname) {
       case '/':
-        return await handleRootRequest(request, USERNAME, PASSWORD, enableAuth);
+        return await handleRootRequest(request, USERNAME, PASSWORD, enableAuth, backgroundImageUrl);
       case `/${adminPath}`:
         return await handleAdminRequest(DATABASE, request, USERNAME, PASSWORD);
       case '/upload':
         return request.method === 'POST' ? await handleUploadRequest(request, DATABASE, enableAuth, USERNAME, PASSWORD, domain, TG_BOT_TOKEN, TG_CHAT_ID, maxSize) : new Response('Method Not Allowed', { status: 405 });
-      case '/bing-images':
-        return handleBingImagesRequest();
+
       case '/delete-images':
         return await handleDeleteImagesRequest(request, DATABASE, USERNAME, PASSWORD);
       default:
@@ -35,7 +35,7 @@ function authenticate(request, USERNAME, PASSWORD) {
   return isValidCredentials(authHeader, USERNAME, PASSWORD);
 }
 
-async function handleRootRequest(request, USERNAME, PASSWORD, enableAuth) {
+async function handleRootRequest(request, USERNAME, PASSWORD, enableAuth, backgroundImageUrl) {
   const cache = caches.default;
   const cacheKey = new Request(request.url);
   if (enableAuth) {
@@ -160,7 +160,7 @@ async function handleRootRequest(request, USERNAME, PASSWORD, enableAuth) {
   </style>
 </head>
 <body>
-  <div class="background" id="background"></div>
+  <div class="background" id="background" style="background-image: url('${backgroundImageUrl || ''}');"></div>
   <div class="card">
       <div class="title">Telegraph图床</div>
       <button type="button" class="btn" id="viewCacheBtn" title="查看历史记录"><i class="fas fa-clock"></i></button>
@@ -187,44 +187,12 @@ async function handleRootRequest(request, USERNAME, PASSWORD, enableAuth) {
       <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.2.7/js/locales/zh.min.js" integrity="sha512-IizKWmZY3aznnbFx/Gj8ybkRyKk7wm+d7MKmEgOMRQDN1D1wmnDRupfXn6X04pwIyKFWsmFVgrcl0j6W3Z5FDQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js" integrity="sha512-lbwH47l/tPXJYG9AcFNoJaTMhGvYWhVM9YI43CT+uteTRRaiLCui8snIgyAN8XWgNjNhCqlAUdzZptso6OCoFQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
       <script>
-      async function fetchBingImages() {
-        const response = await fetch('/bing-images');
-        const data = await response.json();
-        return data.data.map(image => image.url);
-      }
-    
-      async function setBackgroundImages() {
-        const images = await fetchBingImages();
-        const backgroundDiv = document.getElementById('background');
-        if (images.length > 0) {
-          backgroundDiv.style.backgroundImage = 'url(' + images[0] + ')';
-        }
-        let index = 0;
-        let currentBackgroundDiv = backgroundDiv;
-        setInterval(() => {
-          const nextIndex = (index + 1) % images.length;
-          const nextBackgroundDiv = document.createElement('div');
-          nextBackgroundDiv.className = 'background next';
-          nextBackgroundDiv.style.backgroundImage = 'url(' + images[nextIndex] + ')';
-          document.body.appendChild(nextBackgroundDiv);
-          nextBackgroundDiv.style.opacity = 0;
-          setTimeout(() => {
-            nextBackgroundDiv.style.opacity = 1;
-          }, 50);
-          setTimeout(() => {
-            document.body.removeChild(currentBackgroundDiv);
-            currentBackgroundDiv = nextBackgroundDiv;
-            index = nextIndex;
-          }, 1000);
-        }, 5000);
-      }
     
       $(document).ready(function() {
         let originalImageURLs = [];
         let isCacheVisible = false;
         let enableCompression = true;
         initFileInput();
-        setBackgroundImages();
     
         const tooltipText = enableCompression ? '关闭压缩' : '开启压缩';
         $('#compressionToggleBtn').attr('title', tooltipText);
